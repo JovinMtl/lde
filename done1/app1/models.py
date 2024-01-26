@@ -1,0 +1,65 @@
+from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import datetime
+from django.contrib.auth.models import User
+
+
+"""This is for my models"""
+
+class Person(models.Model):
+    
+    name = models.CharField(max_length=15)
+    account = models.IntegerField(default=0)
+
+    @property
+    def message(self):
+        return f"Hello {self.name}"
+    
+    def __str__(self) -> str:
+        return f"{self.name}, {self.id}"
+
+states = ((1, 'Pending'), (2, 'Done'))
+payments = [(1, 'LUMICASH'),(2, 'PAYPAL'),(3, 'eNOTI')]
+
+
+
+class Requeste(models.Model):
+    """Same as operations Table"""
+    amount_to_send = models.IntegerField(default=0)
+    receiver_number = models.IntegerField(default=0)
+    amount_to_deb = models.IntegerField(default=0)
+    state_progress = models.IntegerField(choices=states,\
+                                          default=states[0][0])
+    pay_method = models.IntegerField(choices=payments, default=1)
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    user_username = models.CharField(max_length=15)
+    date_created = models.DateTimeField(default=datetime.now())
+    date_approved = models.DateTimeField(default=datetime.now())
+    link_to_activate = models.URLField(\
+        default='http://127.0.0.1:8000/jov/api/users//')
+    approved_by = models.CharField(max_length=15, default="None")
+
+    def __str__(self):
+        return f"{str(self.amount_to_deb)}, {str(self.id)}"
+
+
+
+class Recharge(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    phone = models.IntegerField(default=0)
+    amount = models.IntegerField(default=0)
+    code_transaction = models.CharField(max_length=15 ,default='xdf')
+    date_action = models.DateTimeField(default=datetime.now())
+
+
+
+class PorteFeuille(models.Model):
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
+    owner_username = models.CharField(max_length=15, default="Noe")
+    lumicash = models.IntegerField(default=0)
+    paypal = models.IntegerField(default=0)
+    enoti = models.IntegerField(default=0)
+
+    def __str__(self) -> str:
+        return str(f"{self.owner_username} , {self.lumicash}")
