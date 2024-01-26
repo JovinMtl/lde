@@ -1,0 +1,24 @@
+
+
+### PREPARATION ######
+1. Install Python3 in your machine;
+2. Clone this project or Download its Zip after extraction;
+3. Open or install an IDE (Vscode) to explore the code;
+4. move into the project's directory(folder);
+4. Create a virtual environement by typing: "python3 -m venv venv_lde";
+6. Activate the virtual environment by typing: "source venv_lde/bin/activate";
+7. Install the required packages for this project by running: "pip install -r requirements.txt";
+
+
+### RUNNING THE PROJECT ###
+8. First run the Lumicash server by running: "python3 Lumicash/manage.py runserver" ;
+9. Open a second terminal and run the done1 server by running: "python3 done1/manage.py runserver 8002";
+
+Note: Please make sure that these two servers are running before attempting to make any operation
+
+
+### INTERACTING WITH THE API ###
+10. Open a third terminal for consumming the API which is accessible to the User. The API in question is 'done1' which is supposed to be running on "http://127.0.0.1:8002/jov/". you copy this link and paste it in your browser.
+
+11. move into the folder by typing : "cd Client";
+12. Run the following script: "python3 requeste.py"
