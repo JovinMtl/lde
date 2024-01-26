@@ -23,4 +23,6 @@ The API in question is 'done1' which is supposed to be running on "http://127.0.
 you copy this link and paste it in your browser.
 
 11. move into the folder by typing : "cd Client";
-12. Run the following script: "python3 requeste.py"
+12. Run the following script: "python3 requeste.py". 
+    This will sent and HTTP request to the Server(done1) and
+    get response in the terminal. It's the basic
