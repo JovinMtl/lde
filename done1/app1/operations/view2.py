@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 # from django.db.models.query import QuerySet.DoesNotExist
@@ -18,23 +18,13 @@ from ..lumi.client_Lumi import LumiRequest
 from ..lumi.login import UserBrowising
 from .code_transanction import GenerateCode
 
-# class ExampleView(APIView):
-#     authentication_classes = [SessionAuthentication, BasicAuthentication]
-#     permission_classes = [IsAuthenticated]
-
-#     def get(self, request, format=None):
-#         content = {
-#             'user': str(request.user),  # `django.contrib.auth.User` instance.
-#             'auth': str(request.auth),  # None
-#         }
-#         return Response(content)
 
 
-#Has classes: RequeWithdrwawViewSet
 
 class RequeWithdrwawViewSet(viewsets.ViewSet):
     """This is for Managing the Requestes"""
-    company_portefeuille = PorteFeuille.objects.get(owner_username='muteule')
+    company_portefeuille = PorteFeuille.objects.get(\
+        owner_username='muteule')
   
     def list(self, request):
         """For listing all available requestes"""
@@ -79,30 +69,23 @@ class RequeWithdrwawViewSet(viewsets.ViewSet):
             code = GenerateCode()
             code_transaction = code.generate('recharge')
             amount_to_deb = data_sent['amount_to_deb']
-            print(f"You are about to acquire funds from terminal: \
-                  {user_agent}")
+            print(f"You are about to use code:  {code_transaction}")
             new_recharge = Recharge.objects.create(\
-                owner=auth, phone=data_sent['number_to_deb'],
+                owner=auth, phone=data_sent['number_to_deb'],\
+                amount=amount_to_deb,
                 code_transaction=code_transaction)
             lumi = UserBrowising(\
                 amount_to_send=amount_to_deb\
                     ,user_to_pay=data_sent['number_to_deb'],
                     code_transaction=code_transaction)
             response = lumi.askFund()
-            print(f"From Lumicash : {response.json()}")
+            # print(f"From Lumicash : {response.json()}")
             if response.status_code == 200:
                 new_recharge.save()
                 link = response.json().get('link_activate')
                 benefitor_portefeuille = PorteFeuille.objects.get(\
                     owner=auth)
-                print(f"\nCelui ci: {benefitor_portefeuille} aura argent\n")
-                finish = self._retranche(self.company_portefeuille,\
-                                 benefitor_portefeuille,\
-                                    amount=amount_to_deb)
-                if finish == 200:
-                    print("The operation done successfully")
-                else:
-                    print("Not done suceessfuly")
+                # print(f"\nCelui ci: {benefitor_portefeuille} aura argent\n")
                 
             return JsonResponse({f"Hello '{username.upper()}', Your request is waiting for your \
 approval. please copythe link below and paste it in the browser to finish":\
@@ -110,18 +93,21 @@ approval. please copythe link below and paste it in the browser to finish":\
     
     def _retranche(self, source, destination, amount, pay_method=1):
         """THis function retrieves the amount """
-        print(f"La source a  le solde de {source.lumicash}")
         if pay_method == 1:
             #lumicash
-            print(f"La source a  le solde de {amount}")
             if int(source.lumicash) >= int(amount):
-                print(f"La source a  le solde de {source.lumicash}")
+                print(f"La source au Debut: {source.lumicash}")
                 source.lumicash -= int(amount)
                 destination.lumicash += int(amount)
                 source.save()
                 destination.save()
-                print(f"La source a  le solde de {source.lumicash}")
-                return 200
+                print(f"La source a la Fin: {source.lumicash}")
+                response = {
+                    'code_status': 200,
+                    'source' : source,
+                    'destination': destination,
+                }
+                return response
             else:
                 return 201
         if pay_method == 2:
@@ -195,19 +181,25 @@ approval. please copythe link below and paste it in the browser to finish":\
         data_sent = request.POST
         phone = data_sent['phone_number']
         code_transaction = data_sent['code_transaction']
+        amount = data_sent['amount']
         try:
             obj = Recharge.objects.get(code_transaction=code_transaction)
         except Recharge.DoesNotExist:
             return JsonResponse({"The Transaction code ":"Does match"})
-        portefeuille = PorteFeuille.objects.get(owner=obj.owner)
-        operation = self._retranche(self.company_portefeuille,\
-                         portefeuille, obj.amount)
-        print(f"The Operation is done with code : {operation}")
+        else:
+            benefitor_portefeuille = PorteFeuille.objects.get(\
+                owner=obj.owner)
+            operation = self._retranche(self.company_portefeuille,\
+                            benefitor_portefeuille, obj.amount)
+            if operation['code_status'] == 200:
+                print(f"{operation['source'].owner} diminue :\
+{operation['source'].lumicash}")
+                print(f"{operation['destination'].owner} augmente  :\
+{operation['destination'].lumicash}")
 
-        print("The approval feedback has come from Lumicash")
-        print(f"{phone}, code: {code_transaction}")
-        return JsonResponse({"The approval feedback":"has come from Lumicash"})
-        pass
+            # print("The approval feedback has come from Lumicash")
+            print(f"{phone}, code: {code_transaction}")
+        return JsonResponse({"Server 1":"has received a reply"})
           
 
 
