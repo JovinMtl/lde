@@ -19,7 +19,8 @@ Note: Please make sure that these two servers are running before attempting to m
 
 ### INTERACTING WITH THE API ###
 10. Open a third terminal for consumming the API which is accessible to the User. 
-The API in question is 'done1' which is supposed to be running on "http://127.0.0.1:8002/jov/". you copy this link and paste it in your browser.
+The API in question is 'done1' which is supposed to be running on "http://127.0.0.1:8002/jov/". 
+you copy this link and paste it in your browser.
 
 11. move into the folder by typing : "cd Client";
 12. Run the following script: "python3 requeste.py"
