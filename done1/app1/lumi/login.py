@@ -95,10 +95,10 @@ class UserBrowising:
 already exist. Please try a new one."
 
 
-browising = UserBrowising()
-# cookies = browising.injira()
-# response = browising.check()
-response = browising.askFund()
-# response = browising.onUsers('get')
-# response = browising.addUser()
-print(f"Your answer is: {response}")
+# browising = UserBrowising()
+# # cookies = browising.injira()
+# # response = browising.check()
+# response = browising.askFund()
+# # response = browising.onUsers('get')
+# # response = browising.addUser()
+# print(f"Your answer is: {response}")

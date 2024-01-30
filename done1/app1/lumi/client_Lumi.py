@@ -35,5 +35,5 @@ class LumiRequest:
     def clSolde(self):
         pass
 
-jov = LumiRequest()
-print(jov.mySolde('transfer'))
+# jov = LumiRequest()
+# print(jov.mySolde('transfer'))
