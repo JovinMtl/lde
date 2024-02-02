@@ -323,9 +323,21 @@ class RequeWithdrwawViewSet(viewsets.ViewSet):
             elif (data_sent.get('wantLid') == 'True') and \
                  (data_sent.get('useMpe') == 'True') and \
                       (amount > tauxMpe):
+                taux = float(tradeToday.buy.mpesa)
+                result = amount / taux
+                ope_mpe = self._retranche(portefeuilleBene, \
+                            company_portefeuille, \
+                                amount=amount,\
+                                    pay_method=3)
+                if ope_mpe['code_status'] != 200:
+                    return JsonResponse({"Your MPesa wasn't":"Touched"})
+                ope_lid = self._retranche(company_portefeuille, \
+                                          portefeuilleBene,\
+                                            amount=result,\
+                                                pay_method=2)
+                if ope_lid['code_status'] != 200:
+                    return JsonResponse({"Your Lid wasn't":"Touched"})
                 print(f"You want to get  back from Mpesa")
-                
-                pass
                 
             else:
                 return JsonResponse({"You don't want":"The lid"})
