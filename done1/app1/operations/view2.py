@@ -11,8 +11,9 @@ from django.contrib.auth.models import User
 # from django.db.models.query import QuerySet.DoesNotExist
 from datetime import datetime
 
-from ..serializers import RequeSeria
-from ..models import Requeste, PorteFeuille, Recharge
+from ..serializers import RequeSeria, UserSeriazer, PorteSeria
+from ..models import Requeste, PorteFeuille, Recharge, Differente,\
+                    Trade
 
 from ..lumi.client_Lumi import LumiRequest 
 from ..lumi.login import UserBrowising
@@ -23,8 +24,6 @@ from .code_transanction import GenerateCode
 
 class RequeWithdrwawViewSet(viewsets.ViewSet):
     """This is for Managing the Requestes"""
-    company_portefeuille = PorteFeuille.objects.get(\
-        owner_username='muteule')
   
     def list(self, request):
         """For listing all available requestes"""
@@ -33,11 +32,21 @@ class RequeWithdrwawViewSet(viewsets.ViewSet):
         serializer_class = RequeSeria(queryset, many=True)
         return Response(serializer_class.data)
     
+    def _checkBalance(self, user, amount):
+        """This is for checking whether we have that amount to 
+        give our user before Uploading his funds to Lumicash.
+        
+        If we do not have sufficient funds, then we need to acquire it
+        in order to serve the customer."""
+        if user.lumicash >= int(amount):
+            return 200
+        else:
+            return 201
     def create(self, request):
         """For creating new requestes"""
         data_sent = request.data
         link = "no link"
-        user_agent = request.META.get('HTTP_USER_AGENT')
+        # user_agent = request.META.get('HTTP_USER_AGENT')
         username = data_sent['username']
         user_password = data_sent['password']
         auth = authenticate(request, username=username,\
@@ -66,33 +75,45 @@ class RequeWithdrwawViewSet(viewsets.ViewSet):
             #user wants to upload to Lde
             #requesting to withdraw to lumicash
             # lumi = LumiRequest()
-            code = GenerateCode()
-            code_transaction = code.generate('recharge')
             amount_to_deb = data_sent['amount_to_deb']
-            print(f"You are about to use code:  {code_transaction}")
-            new_recharge = Recharge.objects.create(\
-                owner=auth, phone=data_sent['number_to_deb'],\
-                amount=amount_to_deb,
-                code_transaction=code_transaction)
-            lumi = UserBrowising(\
-                amount_to_send=amount_to_deb\
-                    ,user_to_pay=data_sent['number_to_deb'],
+            has_balance = self._checkBalance(self.company_portefeuille,\
+                                              amount_to_deb)
+            if has_balance == 201:
+                print(f"the balance is : {has_balance}")
+                return JsonResponse({"We don't have":"Enough Funds"})
+            if has_balance == 200:
+                print(f"the balance is again : {has_balance}")
+                code = GenerateCode()
+                code_transaction = code.generate('recharge')
+                print(f"You are about to use code:  {code_transaction}")
+                new_recharge = Recharge.objects.create(\
+                    owner=auth, phone=data_sent['number_to_deb'],\
+                    amount=amount_to_deb,
                     code_transaction=code_transaction)
-            response = lumi.askFund()
-            # print(f"From Lumicash : {response.json()}")
-            if response.status_code == 200:
-                new_recharge.save()
-                link = response.json().get('link_activate')
-                benefitor_portefeuille = PorteFeuille.objects.get(\
-                    owner=auth)
-                # print(f"\nCelui ci: {benefitor_portefeuille} aura argent\n")
-                
-            return JsonResponse({f"Hello '{username.upper()}', Your request is waiting for your \
-approval. please copythe link below and paste it in the browser to finish":\
-                                  link })
-    
+                lumi = UserBrowising(\
+                    amount_to_send=amount_to_deb\
+                        ,user_to_pay=data_sent['number_to_deb'],
+                        code_transaction=code_transaction)
+                response = lumi.askFund()
+                # print(f"From Lumicash : {response.json()}")
+                if response.status_code == 200:
+                    new_recharge.save()
+                    link = response.json().get('link_activate')
+                    benefitor_portefeuille = PorteFeuille.objects.get(\
+                        owner=auth)
+                    # print(f"\nCelui ci: {benefitor_portefeuille} aura argent\n")
+                    
+                return JsonResponse({f"Hello '{username.upper()}', Your request is waiting for your \
+    approval. please copythe link below and paste it in the browser to finish":\
+                                    link })
+        
     def _retranche(self, source, destination, amount, pay_method=1):
         """THis function retrieves the amount """
+        response = {
+                    'code_status': 203,
+                    'source' : source,
+                    'destination': destination,
+                }
         if pay_method == 1:
             #lumicash
             if int(source.lumicash) >= int(amount):
@@ -102,27 +123,44 @@ approval. please copythe link below and paste it in the browser to finish":\
                 source.save()
                 destination.save()
                 print(f"La source a la Fin: {source.lumicash}")
-                response = {
-                    'code_status': 200,
-                    'source' : source,
-                    'destination': destination,
-                }
+                print(f"avec montant: {amount}")
+                response['code_status'] = 200
                 return response
             else:
-                return 201
+                response['code_status'] = 201
+                return response
         if pay_method == 2:
-            #paypal
-            source.paypal -= amount
+            #Lid
+            if float(source.lid) >= float(amount):
+                print(f"The source Begin: {source.lid}")
+                source.lid -= float(amount)
+                destination.lid += float(amount)
+                source.save()
+                destination.save()
+                print(f"The source end: {source.lid}")
+                print(f"The amount was : {amount}")
+                response['code_status'] = 200
+                return response
+            else:
+                response['code_status'] = 201
+                return response
         if pay_method == 3:
-            #enoti
-            source.enoti -= amount
+            #mpesa
+            if float(source.mpesa) >= float(amount):
+                print(f"The source Begin: {source.lid}")
+                source.mpesa -= float(amount)
+                destination.mpesa += float(amount)
+                source.save()
+                destination.save()
+                print(f"The source end: {source.mpesa}")
+                print(f"The amount was : {amount}")
+                response['code_status'] = 200
+                return response
+            else:
+                response['code_status'] = 201
+                return response
         #saving the state of compte
-        source.save()
-        response = {
-                    'code_returned': 200,
-                    'amount_found': source.lumicash,
-                    'amount_retrieve': amount
-                }
+        # source.save()
         return response
     
     @action(methods=['get'], detail=True)
@@ -178,6 +216,9 @@ approval. please copythe link below and paste it in the browser to finish":\
         The we call the self._retranche() function to do accordingly in
         the local Portefeuille."""
 
+        
+        company_portefeuille = PorteFeuille.objects.get(\
+        owner_username='muteule')
         data_sent = request.POST
         phone = data_sent['phone_number']
         code_transaction = data_sent['code_transaction']
@@ -189,17 +230,109 @@ approval. please copythe link below and paste it in the browser to finish":\
         else:
             benefitor_portefeuille = PorteFeuille.objects.get(\
                 owner=obj.owner)
-            operation = self._retranche(self.company_portefeuille,\
+            operation = self._retranche(company_portefeuille,\
                             benefitor_portefeuille, obj.amount)
             if operation['code_status'] == 200:
                 print(f"{operation['source'].owner} diminue :\
 {operation['source'].lumicash}")
                 print(f"{operation['destination'].owner} augmente  :\
 {operation['destination'].lumicash}")
-
-            # print("The approval feedback has come from Lumicash")
             print(f"{phone}, code: {code_transaction}")
         return JsonResponse({"Server 1":"has received a reply"})
+    
+    
+    @action(methods=['post'], detail=False)
+    def trade(self, request):
+        """This is for trading"""
+        company_portefeuille = PorteFeuille.objects.get(\
+            owner_username='muteule')
+        data_sent = request.POST
+        username = data_sent.get('username')
+        password = data_sent.get('password')
+        amount = float(data_sent.get('give'))
+        
+        user = authenticate(username=username, password=password)
+        if user:
+            portefeuilleBene = PorteFeuille.objects.get(\
+                owner_username=username)
+            tradeToday = Trade.objects.last()
+            tauxLid = float(tradeToday.sell.lid)
+            tauxLum = float(tradeToday.buy.lumicash)
+            tauxMpe = float(tradeToday.buy.mpesa)
+            if (data_sent.get('wantLid') == 'True') and \
+                (data_sent.get('useMpe') != 'True')and (amount > 400):
+                taux = float(tradeToday.sell.lid)
+                result = amount / taux
+                ope_lumicash = self._retranche(portefeuilleBene,\
+                                 company_portefeuille, amount,\
+                                     pay_method=1 )
+                if ope_lumicash['code_status'] == 200:
+                    print(f"money sent successfully")
+                    ope_lid = self._retranche(company_portefeuille,\
+                                    portefeuilleBene, result,
+                                    pay_method=2)
+                    if ope_lid['code_status'] == 200:
+                        print(f"Client has gotten Lid")
+                        return JsonResponse(\
+                            {"You have gotten Lid at":f"{taux}"})
+                else:
+                    print(f"Lumicash wasn't send. reason: \
+                          {ope_lumicash}")
+                print(f"You get {result}, \
+                      {portefeuilleBene.owner_username}")
+                return JsonResponse({"on  you get": "done"})
+            
+            elif (data_sent.get('wantLum') == 'True') and \
+                (data_sent.get('useMpe') != 'True') and \
+                    (amount > tauxLid):
+                taux = tradeToday.buy.lid
+                result = amount * taux
+                ope_lid = self._retranche(portefeuilleBene, \
+                                          company_portefeuille, \
+                                            amount=amount,\
+                                                pay_method=2)
+                if ope_lid['code_status'] != 200:
+                    return JsonResponse({"You Lid wasn't":"Touched"})
+                # print("Your Lid was sent")
+                ope_lumicash = self._retranche(company_portefeuille,\
+                                               portefeuilleBene,\
+                                                amount=result,\
+                                                    pay_method=1)
+                if ope_lumicash['code_status'] != 200:
+                    return JsonResponse({"You haven't gotten":"Lum"})
+                # print("You have gotten new Lum")
+                return JsonResponse({"You want":f"The Lum at {taux}"})
+            
+            elif (data_sent.get('wantMpe') == 'True') and (amount > 1.0):
+                # tauxLid = tradeToday.sell.lumicash
+                tauxMpe = float(tradeToday.buy.mpesa)
+                result = amount * tauxMpe
+                ope_lid = self._retranche(portefeuilleBene,\
+                                           company_portefeuille,\
+                                        amount=amount,\
+                                            pay_method=2)
+                if ope_lid['code_status'] != 200:
+                    return JsonResponse({"Your Lid wasn't":"Touched"})
+                ope_mpe = self._retranche(company_portefeuille, \
+                            portefeuilleBene, amount=result,\
+                                pay_method=3)
+                if ope_mpe['code_status'] != 200:
+                    return JsonResponse({"Your MPesa wasn't":"Touched"})
+                print(f"You have new Mpesa")
+            
+            elif (data_sent.get('wantLid') == 'True') and \
+                 (data_sent.get('useMpe') == 'True') and \
+                      (amount > tauxMpe):
+                print(f"You want to get  back from Mpesa")
+                
+                pass
+                
+            else:
+                return JsonResponse({"You don't want":"The lid"})
+        else:
+            print(user)
+            return JsonResponse({"user not connected":"Try again"})
+        return JsonResponse({"For now":"It has ended well"})
           
 
 
@@ -253,4 +386,3 @@ class ManageUser(APIView):
             }
         return Response(data)
         
- 

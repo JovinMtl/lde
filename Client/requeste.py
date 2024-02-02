@@ -4,7 +4,9 @@ from requests.exceptions import JSONDecodeError
 
 class UserBrowising:
 
-    def __init__(self):
+    def __init__(self, user_to_pay='62111333',\
+                  amount_to_send='500',\
+                  code_transaction='xxt'):
         # Data to be sent
         self.data = {
             'username': 'jovino',
@@ -13,26 +15,31 @@ class UserBrowising:
             'amount_t_cred' : 14000,
         }
         self.data_new_user = {
-            'username': 'jovin',
+            'username': 'thierry',
             'password': 'done1234',
         }
         self.data_fund = {
             'username': 'jovino',
             'password': 'done1234',
-            'receiver_number':62111333,
-            'amount_to_send':500,
+            'receiver_number': user_to_pay,
+            'amount_to_send':amount_to_send,
         }
         self.data_lumi = {
             'username': 'Lde',
             'password': 'done1234',
-            'debtor_number':62111333,
-            'amount_to_pay':500,
+            'debtor_number':user_to_pay,
+            'amount_to_pay':amount_to_send,
+            'code_transaction': code_transaction
+
         }
-        self.data_fund_upload = {
+        self.data_buyLid = {
             'username': 'jovin',
             'password': 'done1234',
-            'amount_to_deb': 2000,
-            'number_to_deb': 62111333
+            'give': 500,
+            'wantLid':'True',
+            'wantLum':'False',
+            'wantMpe':'False',
+            'useMpe': 'True'
 
         }
 
@@ -41,9 +48,10 @@ class UserBrowising:
         self.link = 'http://127.0.0.1:8000/jov/api/check/'
         self.urlFund = 'http://127.0.0.1:8002/jov/api/fund/'
         self.userLink = 'http://127.0.0.1:8000/jov/api/reque//8/approve/'
-        self.linkManageUser = 'http://127.0.0.1:8002/jov/api/user/'
+        self.linkManageUser = 'http://127.0.0.1:8000/jov/api/user/'
         self.askFundLink = 'http://127.0.0.1:8002/jov/api/reque//'
         self.askLumiFund = 'http://127.0.0.1:8000/power/give_not_owner/'
+        self.wantLid = 'http://127.0.0.1:8000/jov/api/reque/trade/'
         self.cookies = ""
         self.response = requests.models.Response()
         
@@ -65,17 +73,10 @@ class UserBrowising:
         self.response = requests.post(self.askLumiFund, self.data_lumi, \
                                       cookies=self.cookies)
         if self.response.status_code == 200:
-            return self.response.json()
-        return (f"THe Funding failed: {self.response.reason}")
-    
-    def uploadFund(self):
-        self.response = requests.post(self.askFundLink,\
-                                       self.data_fund_upload, \
-                                        cookies=self.cookies)
-        if self.response.status_code == 200:
-            return self.response.json()
-        return (f"THe Funding To your accound failed: {self.response.reason}")
+            return self.response
         
+        return self.response
+        return (f"THe Funding failed: {self.response.reason}")
     
     def onUsers(self, method):
         self.injira()
@@ -103,13 +104,20 @@ class UserBrowising:
                 return f"The SERVER says that '{self.response.text}'"
         return f"THis user {self.data_new_user['username']} \
 already exist. Please try a new one."
+    
+    def askLid(self):
+        self.response = requests.post(self.wantLid, self.data_buyLid)
+        if self.response == 200:
+            return(self.response.json())
+        else:
+            return self.response.json()
 
 
 browising = UserBrowising()
-# cookies = browising.injira()
-# response = browising.check()
-# response = browising.askFund() 
-response = browising.uploadFund() #client1 approving Lumicash to pay Lde
-# response = browising.onUsers('get')
+# # cookies = browising.injira()
+# # response = browising.check()
+# response = browising.askFund()
+# # response = browising.onUsers('get')
 # response = browising.addUser()
+response = browising.askLid()
 print(f"Your answer is: {response}")

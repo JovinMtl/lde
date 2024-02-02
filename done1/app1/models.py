@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils import timezone
 from datetime import datetime
 from django.contrib.auth.models import User
 
@@ -52,14 +51,35 @@ class Recharge(models.Model):
     code_transaction = models.CharField(max_length=15 ,default='xdf')
     date_action = models.DateTimeField(default=datetime.now())
 
+class Differente(models.Model):
+    name = models.CharField('Vente ou Achat', max_length=10, \
+                            default="Vente")
+    date = models.DateField(default=datetime.now())
+    lumicash = models.IntegerField(default=0)
+    lid = models.IntegerField(default=0)
+    mpesa = models.IntegerField(default=0)
 
+    def __str__(self) -> str:
+        return f"{self.date} : {self.lumicash} : {self.name}"
+
+class Trade(models.Model):
+    buy = models.ForeignKey(Differente, on_delete=models.CASCADE,\
+                            related_name="we_want_to_buy_the_lid")
+    sell = models.ForeignKey(Differente, on_delete=models.CASCADE,\
+                             related_name="we_want_to_sell_the_Lid")
+    date = models.DateField(default=datetime.now())
+    
+    def __str__(self) -> str:
+        return f"Trade of {self.date}"
 
 class PorteFeuille(models.Model):
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
-    owner_username = models.CharField(max_length=15, default="Noe")
+    owner_username = models.CharField('to be deprecated',\
+                                      max_length=15, default="Noe")
     lumicash = models.IntegerField(default=0)
-    paypal = models.IntegerField(default=0)
-    enoti = models.IntegerField(default=0)
+    lid = models.FloatField(default=0.0)
+    mpesa = models.IntegerField(default=0)
 
     def __str__(self) -> str:
-        return str(f"{self.owner_username} , {self.lumicash}")
+        return str(f"{self.owner_username} , {self.lumicash}, \
+                   {self.lid}")
