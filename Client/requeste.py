@@ -35,7 +35,7 @@ class UserBrowising:
         self.data_buyLid = {
             'username': 'jovin',
             'password': 'done1234',
-            'give': 500,
+            'give': 50,
             'wantLid':'True',
             'wantLum':'False',
             'wantMpe':'False',

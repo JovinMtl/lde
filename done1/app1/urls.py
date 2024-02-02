@@ -15,7 +15,7 @@ from .operations.view2 import RequeWithdrwawViewSet, ManageUser
 
 router = DefaultRouter()
 router.register(r'api/users/', UserViewSet, basename='userrr')
-router.register(r'api/reque/', RequeWithdrwawViewSet, basename='req')
+router.register(r'api/reque', RequeWithdrwawViewSet, basename='req')
 # router.register(r'api/reque/', RequeViewSet, basename='reque' )
 
 urlpatterns = [
