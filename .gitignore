@@ -5,3 +5,5 @@ venv_lde/
 # done1/app1/migrations/
 # Lumicash/db.sqlite3
 done1/app1/backup
+tmp/
+done1/tmp/
